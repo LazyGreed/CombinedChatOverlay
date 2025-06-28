@@ -1,5 +1,5 @@
 import ReconnectingWebSocket from 'reconnecting-websocket';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, KickChatMessage, EmoteData } from '../types'; // Import KickChatMessage and EmoteData
 import { addMessage, updateConnectionStatus } from '../stores/chatStore';
 
 export class KickService {
@@ -135,7 +135,7 @@ export class KickService {
 
             // Handle chat messages
             if (parsedData.event === 'App\\Events\\ChatMessageEvent') {
-                const messageData = JSON.parse(parsedData.data);
+                const messageData: KickChatMessage = JSON.parse(parsedData.data);
                 const message = this.parseKickMessage(messageData);
                 if (message) {
                     addMessage(message);
@@ -147,22 +147,46 @@ export class KickService {
         }
     }
 
-    private parseKickMessage(data: any): ChatMessage | null {
+    private parseKickMessage(data: KickChatMessage): ChatMessage | null {
         try {
             if (!data.content || !data.sender) return null;
+
+            const emotes = this.extractKickEmotes(data.content);
 
             return {
                 id: `kick-${data.id || Date.now()}-${Math.random()}`,
                 platform: 'kick',
                 username: data.sender.username || data.sender.slug || 'Unknown',
-                message: data.content,
+                message: data.content, // Keep original message content for parsing in component
                 timestamp: new Date(data.created_at || Date.now()),
-                userColor: data.sender.identity?.color
+                userColor: data.sender.identity?.color,
+                emotes: emotes, // Add extracted emotes
             };
         } catch (error) {
             console.error('Error parsing Kick message data:', error);
             return null;
         }
+    }
+
+    // New method to extract Kick emotes from the message content
+    private extractKickEmotes(messageText: string): EmoteData[] {
+        const emotes: EmoteData[] = [];
+        const emoteRegex = /\[emote:(\d+):([^\]]+)\]/g // Matches [emote:ID:NAME]
+
+        let match;
+        while ((match = emoteRegex.exec(messageText)) !== null) {
+            const emoteId = match[1];
+            const emoteName = match[2];
+            const emoteUrl = `https://files.kick.com/emotes/${emoteId}/fullsize`; // Construct Kick emote URL
+
+            emotes.push({
+                name: emoteName,
+                url: emoteUrl,
+                positions: [[match.index, match.index + match[0].length - 1]],
+                platform: 'kick',
+            });
+        }
+        return emotes;
     }
 
     disconnect(): void {

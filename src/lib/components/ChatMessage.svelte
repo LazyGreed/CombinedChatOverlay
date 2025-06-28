@@ -56,26 +56,30 @@
     function parseMessageWithMentions(
         messageText: string,
         emotes: any[] = [],
+        platform: 'twitch' | 'kick' | 'youtube', // Pass platform to tailor emote handling
     ): string {
         if (!messageText) return "";
 
         let parsedMessage = messageText;
 
-        // First handle emotes for non-YouTube platforms
-        if (message.platform !== "youtube" && emotes && emotes.length > 0) {
-            emotes.forEach((emote) => {
-                if (emote.url) {
+        // Handle emotes based on platform
+        if (emotes && emotes.length > 0) {
+            if (platform === "twitch" || platform === "kick") {
+                // For Twitch and Kick, replace text placeholders with img tags
+                // Sort emotes by their starting position in descending order
+                // to avoid issues with shifting indices after replacement
+                emotes.sort((a, b) => b.positions[0][0] - a.positions[0][0]);
+
+                for (const emote of emotes) {
+                    const [start, end] = emote.positions[0]; // Assuming single position for simplicity
+                    const emotePlaceholder = messageText.substring(start, end + 1);
                     const emoteImg = `<img src="${emote.url}" alt="${emote.name}" class="emote" />`;
-                    emote.positions.forEach((position: number[]) => {
-                        const [start, end] = position;
-                        const emoteName = messageText.slice(start, end + 1);
-                        parsedMessage = parsedMessage.replace(
-                            emoteName,
-                            emoteImg,
-                        );
-                    });
+                    parsedMessage = parsedMessage.slice(0, start) + emoteImg + parsedMessage.slice(end + 1);
                 }
-            });
+            }
+            // YouTube emotes are handled by their unicode characters, no explicit img tag replacement here
+            // The `extractYouTubeEmotes` function in `youtubeService.ts` already sets `url` to empty
+            // and `name` to the unicode character, so they will naturally render if the browser supports them.
         }
 
         // Handle @mentions - look for @username patterns
@@ -123,7 +127,7 @@
         <span class="timestamp">{formatTime(message.timestamp)}</span>
     </div>
     <div class="message-content">
-        {@html parseMessageWithMentions(message.message, message.emotes)}
+        {@html parseMessageWithMentions(message.message, message.emotes, message.platform)}
     </div>
 </div>
 
@@ -182,7 +186,7 @@
 
     /* Emote styling */
     .message-content :global(.emote) {
-        height: 1.5em;
+        height: 1.5em; /* Adjust as needed */
         width: auto;
         vertical-align: middle;
         margin: 0 2px;

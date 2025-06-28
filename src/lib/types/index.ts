@@ -12,6 +12,7 @@ export interface EmoteData {
     name: string;
     url: string;
     positions: number[][];
+    platform?: 'twitch' | 'kick' | 'youtube'; // Add platform to EmoteData
 }
 
 export interface ChannelConfig {
@@ -78,4 +79,19 @@ export interface KickChatMessage {
             badges: any[];
         };
     };
+    // Kick specific emote data
+    metadata?: {
+        message_id: string;
+        emote_id?: string;
+        emote_name?: string;
+        // other metadata properties if they exist
+    };
+    emotes?: KickEmoteData[]; // Add Kick specific emotes
+}
+
+// Define the KickEmoteData interface based on Kick's API response for emotes
+export interface KickEmoteData {
+    id: number;
+    name: string;
+    src: string;
 }
