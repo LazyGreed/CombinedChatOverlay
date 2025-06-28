@@ -17,6 +17,10 @@
         <span class="indicator" class:connected={$connectionStatus.youtube}
         ></span>
     </div>
+    <div class="status-item">
+        <span class="platform"> <a href="https://github.com/LazyGreed/CombinedChatOverlay/" target="_blank" style="text-decoration: none; color: white;"> Github </a> </span>
+        <span class="indicator" class:connected={true}></span>
+    </div>
 </div>
 
 <style>

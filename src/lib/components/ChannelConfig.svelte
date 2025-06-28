@@ -134,6 +134,9 @@
                 <strong>No messages appearing:</strong> Check browser console for
                 error messages
               </li>
+              <li>
+                <strong>None of above:</strong> <a href="https://github.com/LazyGreed/CombinedChatOverlay/issues" target="_blank"> Open an issue on GitHub with detailed information about your problems </a>
+              </li>
             </ul>
           </div>
         </details>
