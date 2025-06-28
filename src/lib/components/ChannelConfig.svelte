@@ -65,13 +65,13 @@
         />
         <input
           type="password"
-          placeholder="OAuth token (oauth:xxxxx)"
+          placeholder="Access Token"
           bind:value={config.twitch!.token}
         />
         <small
           >Get your OAuth token from <a
-            href="https://twitchapps.com/tmi/"
-            target="_blank">twitchapps.com/tmi</a
+            href="https://twitchtokengenerator.com/"
+            target="_blank">twitchtokengenerator.com</a
           ></small
         >
       </div>
