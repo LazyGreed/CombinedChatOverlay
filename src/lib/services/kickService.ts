@@ -21,7 +21,7 @@ export class KickService {
             }
 
             // Connect to Kick's WebSocket with the correct app key and cluster
-            const wsUrl = `wss://ws-us2.pusher.com/app/eb1d5f283081a78b932c?protocol=7&client=js&version=7.4.0&flash=false`;
+            const wsUrl = `wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false`;
 
             this.ws = new ReconnectingWebSocket(wsUrl, [], {
                 maxReconnectionDelay: 10000,
