@@ -2,12 +2,14 @@
     import ChannelConfig from "./lib/components/ChannelConfig.svelte";
     import ConnectionStatus from "./lib/components/ConnectionStatus.svelte";
     import ChatContainer from "./lib/components/ChatContainer.svelte";
+    // import DebugPanel from "$lib/components/DebugPanel.svelte";
 </script>
 
 <main>
     <ChannelConfig />
     <ConnectionStatus />
     <ChatContainer />
+    <!-- <DebugPanel /> -->
 </main>
 
 <style>

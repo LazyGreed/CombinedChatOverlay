@@ -52,7 +52,7 @@ export class YouTubeService {
         if (document.hidden) {
             // Page is hidden, slow down polling significantly
             this.isActive = false;
-            this.adjustPollingInterval(30000); // 30 seconds when hidden
+            this.adjustPollingInterval(10000); // 10 seconds when hidden
         } else {
             // Page is visible, resume normal polling
             this.isActive = true;
@@ -64,7 +64,7 @@ export class YouTubeService {
         const now = Date.now();
 
         // Reset hourly counter if an hour has passed
-        if (now - this.lastHourReset > 3600000) { // 1 hour
+        if (now - this.lastHourReset > 600000) { // 10 minutes
             this.hourlyQuotaUsed = 0;
             this.lastHourReset = now;
         }
@@ -87,7 +87,7 @@ export class YouTubeService {
     private async getChannelId(): Promise<string> {
         this.incrementApiCall();
 
-        // First try to get channel by username/handle
+        // First try to get channel by username
         let response = await fetch(
             `https://www.googleapis.com/youtube/v3/channels?part=id&forUsername=${this.channelName}&key=${this.apiKey}`
         );
