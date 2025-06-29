@@ -53,7 +53,7 @@
                 if (isPaused) {
                     resumeChat();
                 }
-            }, 10000); // Auto-resume after 10 seconds of inactivity
+            }, 100); // Auto-resume after 100ms of inactivity
         }
     }
 
