@@ -1,3 +1,43 @@
+// Helper: Use Puppeteer to fetch ytInitialData from a YouTube video page
+import puppeteer from 'puppeteer';
+
+async function getYtInitialDataWithPuppeteer(videoId: string): Promise<any | null> {
+    const url = `https://www.youtube.com/watch?v=${videoId}`;
+    let browser = null;
+    try {
+        browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            headless: true,
+        });
+        const page = await browser.newPage();
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+        // Extract ytInitialData from the page context
+        const initialData = await page.evaluate(() => {
+            // Try both variable and window property
+            // @ts-ignore
+            if (typeof ytInitialData !== 'undefined') return ytInitialData;
+            // @ts-ignore
+            if (window.ytInitialData) return window.ytInitialData;
+            // Try to find in scripts
+            const scripts = Array.from(document.scripts);
+            for (const script of scripts) {
+                if (script.textContent && script.textContent.includes('ytInitialData')) {
+                    const match = script.textContent.match(/ytInitialData\s*=\s*(\{.*?\});/s);
+                    if (match && match[1]) {
+                        try { return JSON.parse(match[1]); } catch (e) { return null; }
+                    }
+                }
+            }
+            return null;
+        });
+        return initialData || null;
+    } catch (err) {
+        console.error('[Puppeteer] Failed to fetch ytInitialData:', err);
+        return null;
+    } finally {
+        if (browser) await browser.close();
+    }
+}
 // Helper: extract minimal chat messages from YouTube API response
 function extractMinimalChatMessages(data: any, maxMessages = 50) {
     const actions = data?.continuationContents?.liveChatContinuation?.actions || [];
@@ -120,7 +160,11 @@ export const POST: RequestHandler = async ({ request }) => {
                 }
             }
             if (!initialData) {
-                return new Response(JSON.stringify({ messages: [], videoId: vid, continuation: null, error: 'Could not find ytInitialData JSON.' }), { status: 200 });
+                // Try Puppeteer as a fallback
+                initialData = await getYtInitialDataWithPuppeteer(vid);
+                if (!initialData) {
+                    return new Response(JSON.stringify({ messages: [], videoId: vid, continuation: null, error: 'Could not find ytInitialData JSON (even with Puppeteer).' }), { status: 200 });
+                }
             }
             // Find the live chat continuation token in initialData
             let continuation = null;
