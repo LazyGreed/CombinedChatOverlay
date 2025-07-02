@@ -143,6 +143,8 @@ export const POST: RequestHandler = async ({ request }) => {
                 }
             }
             if (!continuation) {
+                // Log the first 1000 characters of the fetched HTML for debugging
+                console.error('[YouTube Chat Debug] Could not find live chat continuation token. Fetched HTML (first 1000 chars):', text.slice(0, 1000));
                 return new Response(JSON.stringify({ messages: [], videoId: vid, continuation: null, error: 'Could not find live chat continuation token in ytInitialData.' }), { status: 200 });
             }
             cont = continuation;
