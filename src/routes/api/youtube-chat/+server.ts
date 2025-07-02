@@ -134,13 +134,25 @@ export const POST: RequestHandler = async ({ request }) => {
                     }
                 }
             } catch (e) {}
-            if (!continuation) {
-                // Try to find any continuation in the JSON
-                const jsonStr = JSON.stringify(initialData);
-                const contMatch = jsonStr.match(/\"continuation\"\s*:\s*\"([^\"]+)\"/);
-                if (contMatch && contMatch[1]) {
-                    continuation = contMatch[1];
+            // Recursive search for any 'continuation' key in the object
+            function findContinuation(obj: any): string | null {
+                if (!obj || typeof obj !== 'object') return null;
+                if (Object.prototype.hasOwnProperty.call(obj, 'continuation') && typeof obj.continuation === 'string') {
+                    return obj.continuation;
                 }
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const val = obj[key];
+                        if (typeof val === 'object') {
+                            const found = findContinuation(val);
+                            if (found) return found;
+                        }
+                    }
+                }
+                return null;
+            }
+            if (!continuation) {
+                continuation = findContinuation(initialData);
             }
             if (!continuation) {
                 // Log the first 1000 characters of the fetched HTML for debugging
