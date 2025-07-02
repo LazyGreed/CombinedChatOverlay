@@ -18,15 +18,12 @@ export interface EmoteData {
 export interface ChannelConfig {
     twitch?: {
         channel: string;
-        username: string;
-        token: string;
     };
     kick?: {
         channel: string;
     };
     youtube?: {
         channelName: string;
-        apiKey: string;
     };
 }
 

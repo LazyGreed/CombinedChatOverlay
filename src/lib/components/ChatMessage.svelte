@@ -58,28 +58,26 @@
         emotes: any[] = [],
         platform: 'twitch' | 'kick' | 'youtube', // Pass platform to tailor emote handling
     ): string {
+
         if (!messageText) return "";
 
         let parsedMessage = messageText;
 
-        // Handle emotes based on platform
+        // Handle emotes for all platforms (Twitch, Kick, YouTube)
         if (emotes && emotes.length > 0) {
-            if (platform === "twitch" || platform === "kick") {
-                // For Twitch and Kick, replace text placeholders with img tags
-                // Sort emotes by their starting position in descending order
-                // to avoid issues with shifting indices after replacement
-                emotes.sort((a, b) => b.positions[0][0] - a.positions[0][0]);
+            // Sort emotes by their starting position in descending order
+            emotes.sort((a, b) => b.positions[0][0] - a.positions[0][0]);
 
-                for (const emote of emotes) {
-                    const [start, end] = emote.positions[0]; // Assuming single position for simplicity
-                    const emotePlaceholder = messageText.substring(start, end + 1);
+            for (const emote of emotes) {
+                const [start, end] = emote.positions[0]; // Assuming single position for simplicity
+                const emotePlaceholder = messageText.substring(start, end + 1);
+                // Only replace with <img> if a URL is present (for image emotes)
+                if (emote.url) {
                     const emoteImg = `<img src="${emote.url}" alt="${emote.name}" class="emote" />`;
                     parsedMessage = parsedMessage.slice(0, start) + emoteImg + parsedMessage.slice(end + 1);
                 }
+                // If no URL, leave the text as-is (for Unicode emoji)
             }
-            // YouTube emotes are handled by their unicode characters, no explicit img tag replacement here
-            // The `extractYouTubeEmotes` function in `youtubeService.ts` already sets `url` to empty
-            // and `name` to the unicode character, so they will naturally render if the browser supports them.
         }
 
         // Handle @mentions - look for @username patterns

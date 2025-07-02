@@ -153,8 +153,9 @@ export class KickService {
 
             const emotes = this.extractKickEmotes(data.content);
 
+            // Use a stable, unique ID for deduplication
             return {
-                id: `kick-${data.id || Date.now()}-${Math.random()}`,
+                id: `kick-${data.id}`,
                 platform: 'kick',
                 username: data.sender.username || data.sender.slug || 'Unknown',
                 message: data.content, // Keep original message content for parsing in component

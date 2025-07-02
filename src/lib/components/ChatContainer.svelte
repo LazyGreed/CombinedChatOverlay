@@ -6,6 +6,7 @@
     import { YouTubeService } from "../services/youtubeService";
     import ChatMessage from "./ChatMessage.svelte";
 
+
     let chatContainer: HTMLElement;
     let services: (TwitchService | KickService | YouTubeService)[] = [];
 
@@ -16,6 +17,8 @@
     // let pauseResumeButton: HTMLElement;
     let lastScrollTop = 0;
     let isNearBottom = true;
+let ignoreNextScroll = false;
+let lastProgrammaticScroll = 0;
 
     // Store messages that arrive while paused
     let pausedMessages: typeof $recentMessages = [];
@@ -24,14 +27,26 @@
     function handleScroll() {
         if (!chatContainer) return;
 
+        // Ignore scrolls within 400ms of a programmatic scroll
+        if (Date.now() - lastProgrammaticScroll < 800) {
+            lastScrollTop = chatContainer.scrollTop;
+            return;
+        }
+
+        if (ignoreNextScroll) {
+            ignoreNextScroll = false;
+            lastScrollTop = chatContainer.scrollTop;
+            return;
+        }
+
         const { scrollTop, scrollHeight, clientHeight } = chatContainer;
         const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
 
         // Consider "near bottom" if within 100px of the bottom
         isNearBottom = distanceFromBottom <= 100;
 
-        // If user scrolls up from bottom, pause auto-scroll
-        if (scrollTop < lastScrollTop && !isNearBottom && !isPaused) {
+        // Only pause if user scrolls up by more than 20px and not near bottom
+        if ((lastScrollTop - scrollTop) > 20 && !isNearBottom && !isPaused) {
             pauseChat();
         }
 
@@ -47,13 +62,13 @@
             clearTimeout(scrollTimeout);
         }
 
-        // Set new timeout to auto-resume after 10 seconds of no scrolling
+        // Set new timeout to auto-resume after 5 seconds of no scrolling
         if (isPaused) {
             scrollTimeout = window.setTimeout(() => {
                 if (isPaused) {
                     resumeChat();
                 }
-            }, 100); // Auto-resume after 100ms of inactivity
+            }, 5000); // Auto-resume after 5 seconds of inactivity
         }
     }
 
@@ -89,6 +104,8 @@
 
     function scrollToBottom() {
         if (chatContainer) {
+            ignoreNextScroll = true;
+            lastProgrammaticScroll = Date.now();
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     }
@@ -123,18 +140,11 @@
             // Disconnect existing services
             services.forEach((service) => service.disconnect());
             services = [];
-
             try {
                 // Connect to Twitch
-                if (
-                    config.twitch?.channel &&
-                    config.twitch?.username &&
-                    config.twitch?.token
-                ) {
+                if (config.twitch?.channel) {
                     const twitchService = new TwitchService(
-                        config.twitch.channel,
-                        config.twitch.username,
-                        config.twitch.token,
+                        config.twitch.channel
                     );
                     await twitchService.connect();
                     services.push(twitchService);
@@ -152,10 +162,9 @@
                 }
 
                 // Connect to YouTube
-                if (config.youtube?.channelName && config.youtube?.apiKey) {
+                if (config.youtube?.channelName) {
                     const youtubeService = new YouTubeService(
-                        config.youtube.channelName,
-                        config.youtube.apiKey,
+                        config.youtube.channelName
                     );
                     await youtubeService.connect();
                     services.push(youtubeService);
@@ -192,8 +201,10 @@
     {/if}
 
     <div class="chat-container" bind:this={chatContainer}>
-        {#each isPaused ? allMessages : $recentMessages as message (message.id)}
-            <ChatMessage {message} />
+
+        <!-- TEMP: Fallback rendering for debugging -->
+        {#each (isPaused ? allMessages : $recentMessages) as item (item.id)}
+            <ChatMessage {item} message={item} />
         {/each}
 
         {#if (isPaused ? allMessages : $recentMessages).length === 0}
@@ -204,6 +215,7 @@
                 </p>
             </div>
         {/if}
+        <!-- TEMP DEBUG REMOVED -->
     </div>
 </div>
 

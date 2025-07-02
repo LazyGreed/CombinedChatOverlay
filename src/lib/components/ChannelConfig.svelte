@@ -4,9 +4,9 @@
   import { onMount } from "svelte";
 
   let config: ChannelConfig = {
-    twitch: { channel: "", username: "", token: "" },
+    twitch: { channel: "" },
     kick: { channel: "" },
-    youtube: { channelName: "", apiKey: "" },
+    youtube: { channelName: "" },
   };
   let showConfig = false;
 
@@ -18,15 +18,12 @@
     config = {
       twitch: {
         channel: loadedConfig.twitch?.channel || "",
-        username: loadedConfig.twitch?.username || "",
-        token: loadedConfig.twitch?.token || "",
       },
       kick: {
         channel: loadedConfig.kick?.channel || "",
       },
       youtube: {
         channelName: loadedConfig.youtube?.channelName || "",
-        apiKey: loadedConfig.youtube?.apiKey || "",
       },
     };
   });
@@ -49,7 +46,6 @@
   {#if showConfig}
     <div class="config-panel">
       <h3>Channel Configuration</h3>
-
       <!-- Twitch Configuration -->
       <div class="platform-config">
         <h4>🟣 Twitch</h4>
@@ -58,22 +54,6 @@
           placeholder="Channel name"
           bind:value={config.twitch!.channel}
         />
-        <input
-          type="text"
-          placeholder="Your username"
-          bind:value={config.twitch!.username}
-        />
-        <input
-          type="password"
-          placeholder="Access Token"
-          bind:value={config.twitch!.token}
-        />
-        <small
-          >Get your OAuth token from <a
-            href="https://twitchtokengenerator.com/"
-            target="_blank">twitchtokengenerator.com</a
-          ></small
-        >
       </div>
 
       <!-- Kick Configuration -->
@@ -94,19 +74,6 @@
           placeholder="Channel name (e.g., @channelname or channelname)"
           bind:value={config.youtube!.channelName}
         />
-        <input
-          type="password"
-          placeholder="API Key"
-          bind:value={config.youtube!.apiKey}
-        />
-        <small
-          >Get your API key from <a
-            href="https://console.developers.google.com/"
-            target="_blank">Google Cloud Console</a
-          ></small
-        >
-        <small>Enable YouTube Data API v3 in your Google Cloud project</small>
-        <small>Channel must be currently live streaming for chat to work</small>
       </div>
 
       <div class="config-actions">
@@ -116,33 +83,8 @@
         <button on:click={toggleConfig} class="cancel-button">Cancel</button>
       </div>
 
-      <div class="config-help">
-        <details>
-          <summary>Troubleshooting Help</summary>
-          <div class="troubleshooting">
-            <h5>Common Issues:</h5>
-            <ul>
-              <li>
-                <strong>Twitch not connecting:</strong> Check OAuth token format
-                (should start with "oauth:")
-              </li>
-              <li>
-                <strong>YouTube not working:</strong> Ensure the channel is live
-                streaming and API key is valid
-              </li>
-              <li>
-                <strong>No messages appearing:</strong> Check browser console for
-                error messages
-              </li>
-              <li>
-                <strong>None of above:</strong> <a href="https://github.com/LazyGreed/CombinedChatOverlay/issues" target="_blank"> Open an issue on GitHub with detailed information about your problems </a>
-              </li>
-            </ul>
-          </div>
-        </details>
-      </div>
     </div>
-  {/if}
+{/if}
 </div>
 
 <style>
@@ -215,12 +157,12 @@
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
   }
 
-  .platform-config small {
+  /* .platform-config small {
     color: #666;
     font-size: 0.8em;
     display: block;
     margin-bottom: 4px;
-  }
+  } */
 
   .config-actions {
     display: flex;
@@ -255,6 +197,7 @@
     background: #545b62;
   }
 
+  /*
   .config-help {
     margin-top: 12px;
   }
@@ -291,4 +234,5 @@
     margin: 8px 0 4px 0;
     color: #333;
   }
+  */
 </style>
