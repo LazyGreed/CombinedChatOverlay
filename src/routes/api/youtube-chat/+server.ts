@@ -155,9 +155,10 @@ export const POST: RequestHandler = async ({ request }) => {
                 continuation = findContinuation(initialData);
             }
             if (!continuation) {
-                // Log the first 1000 characters of the fetched HTML for debugging
-                console.error('[YouTube Chat Debug] Could not find live chat continuation token. Fetched HTML (first 1000 chars):', text.slice(0, 1000));
-                return new Response(JSON.stringify({ messages: [], videoId: vid, continuation: null, error: 'Could not find live chat continuation token in ytInitialData.' }), { status: 200 });
+                // Log and return the first 1000 characters of the fetched HTML for debugging
+                const debugHtml = text.slice(0, 1000);
+                console.error('[YouTube Chat Debug] Could not find live chat continuation token. Fetched HTML (first 1000 chars):', debugHtml);
+                return new Response(JSON.stringify({ messages: [], videoId: vid, continuation: null, error: 'Could not find live chat continuation token in ytInitialData.', debugHtml }), { status: 200 });
             }
             cont = continuation;
             // Extract INNERTUBE_API_KEY and client info from the HTML
