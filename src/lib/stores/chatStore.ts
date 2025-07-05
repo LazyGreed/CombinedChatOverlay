@@ -1,3 +1,6 @@
+import { writable, derived } from 'svelte/store';
+import type { ChatMessage, ChannelConfig, ConnectionStatus } from '../types';
+
 // Add multiple messages at once, deduplicate by id, keep most recent 100
 export const addMessages = (newMessages: ChatMessage[]) => {
     messages.update(msgs => {
@@ -18,8 +21,6 @@ export const addMessages = (newMessages: ChatMessage[]) => {
         return deduped.slice(-100);
     });
 };
-import { writable, derived } from 'svelte/store';
-import type { ChatMessage, ChannelConfig, ConnectionStatus } from '../types';
 
 export const messages = writable<ChatMessage[]>([]);
 export const channelConfig = writable<ChannelConfig>({});

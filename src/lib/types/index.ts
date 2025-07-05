@@ -6,6 +6,17 @@ export interface ChatMessage {
     timestamp: Date;
     emotes?: EmoteData[];
     userColor?: string;
+    badges?: BadgeData[];
+    eventType?: string; // e.g. 'sub', 'raid', etc.
+    isFirstTime?: boolean;
+}
+
+// Twitch badge data
+export interface BadgeData {
+    setID: string; // e.g. moderator, subscriber
+    version: string; // e.g. 1, 12
+    url: string; // badge image url
+    description?: string;
 }
 
 export interface EmoteData {

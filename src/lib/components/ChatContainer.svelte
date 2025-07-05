@@ -6,7 +6,6 @@
     import { YouTubeService } from "../services/youtubeService";
     import ChatMessage from "./ChatMessage.svelte";
 
-
     let chatContainer: HTMLElement;
     let services: (TwitchService | KickService | YouTubeService)[] = [];
 
@@ -14,14 +13,14 @@
     let isPaused = false;
     let scrollTimeout: number | null = null;
     let unreadCount = 0;
+
     // let pauseResumeButton: HTMLElement;
     let lastScrollTop = 0;
     let isNearBottom = true;
-let ignoreNextScroll = false;
-let lastProgrammaticScroll = 0;
+    let ignoreNextScroll = false;
+    let lastProgrammaticScroll = 0;
 
     // Store messages that arrive while paused
-    let pausedMessages: typeof $recentMessages = [];
     let allMessages: typeof $recentMessages = [];
 
     function handleScroll() {
@@ -46,7 +45,7 @@ let lastProgrammaticScroll = 0;
         isNearBottom = distanceFromBottom <= 100;
 
         // Only pause if user scrolls up by more than 20px and not near bottom
-        if ((lastScrollTop - scrollTop) > 20 && !isNearBottom && !isPaused) {
+        if (lastScrollTop - scrollTop > 20 && !isNearBottom && !isPaused) {
             pauseChat();
         }
 
@@ -78,7 +77,6 @@ let lastProgrammaticScroll = 0;
 
         // Store current state
         allMessages = [...$recentMessages];
-        pausedMessages = [];
         unreadCount = 0;
     }
 
@@ -94,7 +92,6 @@ let lastProgrammaticScroll = 0;
 
         // Reset counters
         unreadCount = 0;
-        pausedMessages = [];
 
         // Scroll to bottom after a brief delay
         setTimeout(() => {
@@ -107,14 +104,6 @@ let lastProgrammaticScroll = 0;
             ignoreNextScroll = true;
             lastProgrammaticScroll = Date.now();
             chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-    }
-
-    function togglePause() {
-        if (isPaused) {
-            resumeChat();
-        } else {
-            pauseChat();
         }
     }
 
@@ -143,11 +132,23 @@ let lastProgrammaticScroll = 0;
             try {
                 // Connect to Twitch
                 if (config.twitch?.channel) {
-                    const twitchService = new TwitchService(
-                        config.twitch.channel
-                    );
-                    await twitchService.connect();
-                    services.push(twitchService);
+                    const TWITCH_CLIENT_ID =
+                        import.meta.env.VITE_TWITCH_CLIENT_ID || "";
+                    const TWITCH_OAUTH_TOKEN =
+                        import.meta.env.VITE_TWITCH_OAUTH_TOKEN || "";
+                    if (!TWITCH_CLIENT_ID || !TWITCH_OAUTH_TOKEN) {
+                        console.error(
+                            "Twitch Client-ID and OAuth token are required for TwitchService.",
+                        );
+                    } else {
+                        const twitchService = new TwitchService(
+                            config.twitch.channel,
+                            TWITCH_CLIENT_ID,
+                            TWITCH_OAUTH_TOKEN,
+                        );
+                        await twitchService.connect();
+                        services.push(twitchService);
+                    }
                 }
 
                 // Connect to Kick
@@ -164,7 +165,7 @@ let lastProgrammaticScroll = 0;
                 // Connect to YouTube
                 if (config.youtube?.channelName) {
                     const youtubeService = new YouTubeService(
-                        config.youtube.channelName
+                        config.youtube.channelName,
                     );
                     await youtubeService.connect();
                     services.push(youtubeService);
@@ -201,10 +202,9 @@ let lastProgrammaticScroll = 0;
     {/if}
 
     <div class="chat-container" bind:this={chatContainer}>
-
         <!-- TEMP: Fallback rendering for debugging -->
-        {#each (isPaused ? allMessages : $recentMessages) as item (item.id)}
-            <ChatMessage {item} message={item} />
+        {#each isPaused ? allMessages : $recentMessages as item (item.id)}
+            <ChatMessage message={item} />
         {/each}
 
         {#if (isPaused ? allMessages : $recentMessages).length === 0}

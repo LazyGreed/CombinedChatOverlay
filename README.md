@@ -20,7 +20,8 @@
     ```bash
     npm run dev
     ```
+    
 ## TODO:
 
-- require only channel names
-- add emotes support
+- add badges support for kick
+- fix youtubeService not working when hosted on server

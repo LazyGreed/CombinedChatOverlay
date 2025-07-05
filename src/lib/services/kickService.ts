@@ -1,5 +1,5 @@
 import ReconnectingWebSocket from 'reconnecting-websocket';
-import type { ChatMessage, KickChatMessage, EmoteData } from '../types'; // Import KickChatMessage and EmoteData
+import type { ChatMessage, KickChatMessage, EmoteData } from '../types'; 
 import { addMessage, updateConnectionStatus } from '../stores/chatStore';
 
 export class KickService {

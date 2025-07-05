@@ -74,6 +74,7 @@
           placeholder="Channel name (e.g., @channelname or channelname)"
           bind:value={config.youtube!.channelName}
         />
+        <span style="color: grey;">Might not work on server.</span>
       </div>
 
       <div class="config-actions">
@@ -82,9 +83,8 @@
         >
         <button on:click={toggleConfig} class="cancel-button">Cancel</button>
       </div>
-
     </div>
-{/if}
+  {/if}
 </div>
 
 <style>
@@ -157,13 +157,6 @@
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
   }
 
-  /* .platform-config small {
-    color: #666;
-    font-size: 0.8em;
-    display: block;
-    margin-bottom: 4px;
-  } */
-
   .config-actions {
     display: flex;
     gap: 10px;
@@ -196,43 +189,4 @@
   .cancel-button:hover {
     background: #545b62;
   }
-
-  /*
-  .config-help {
-    margin-top: 12px;
-  }
-
-  .config-help details {
-    background: #f8f9fa;
-    border-radius: 6px;
-    padding: 8px;
-  }
-
-  .config-help summary {
-    cursor: pointer;
-    font-weight: 500;
-    color: #495057;
-    padding: 4px;
-  }
-
-  .troubleshooting {
-    margin-top: 8px;
-    padding: 8px;
-  }
-
-  .troubleshooting ul {
-    margin: 8px 0;
-    padding-left: 20px;
-  }
-
-  .troubleshooting li {
-    margin-bottom: 4px;
-    font-size: 13px;
-  }
-
-  .troubleshooting h5 {
-    margin: 8px 0 4px 0;
-    color: #333;
-  }
-  */
 </style>

@@ -21,6 +21,7 @@
             hour12: false,
             hour: "2-digit",
             minute: "2-digit",
+            second: "2-digit",
         });
     }
 
@@ -56,59 +57,143 @@
     function parseMessageWithMentions(
         messageText: string,
         emotes: any[] = [],
-        platform: 'twitch' | 'kick' | 'youtube', // Pass platform to tailor emote handling
     ): string {
-
         if (!messageText) return "";
 
-        let parsedMessage = messageText;
-
-        // Handle emotes for all platforms (Twitch, Kick, YouTube)
+        let emoteRanges: [number, number, any][] = [];
         if (emotes && emotes.length > 0) {
-            // Sort emotes by their starting position in descending order
-            emotes.sort((a, b) => b.positions[0][0] - a.positions[0][0]);
-
             for (const emote of emotes) {
-                const [start, end] = emote.positions[0]; // Assuming single position for simplicity
-                const emotePlaceholder = messageText.substring(start, end + 1);
-                // Only replace with <img> if a URL is present (for image emotes)
-                if (emote.url) {
-                    const emoteImg = `<img src="${emote.url}" alt="${emote.name}" class="emote" />`;
-                    parsedMessage = parsedMessage.slice(0, start) + emoteImg + parsedMessage.slice(end + 1);
-                }
-                // If no URL, leave the text as-is (for Unicode emoji)
+                const [start, end] = emote.positions[0];
+                emoteRanges.push([start, end, emote]);
             }
         }
 
-        // Handle @mentions - look for @username patterns
-        const mentionRegex = /@(\w+)/g;
-        parsedMessage = parsedMessage.replace(
-            mentionRegex,
-            (match, username) => {
-                // For Twitch, try to use a consistent color based on the mentioned username
-                let mentionColor = generateUserColor(username.toLowerCase());
+        // Collect link ranges
+        const urlRegex = /https:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+/gi;
+        let linkRanges: [number, number, string][] = [];
+        let match;
+        while ((match = urlRegex.exec(messageText)) !== null) {
+            linkRanges.push([
+                match.index,
+                match.index + match[0].length - 1,
+                match[0],
+            ]);
+        }
 
-                // If this is the same user as the message sender, use their color
+        // Collect mention ranges
+        const mentionRegex = /@(\w+)/g;
+        let mentionRanges: [number, number, string][] = [];
+        while ((match = mentionRegex.exec(messageText)) !== null) {
+            mentionRanges.push([
+                match.index,
+                match.index + match[0].length - 1,
+                match[1],
+            ]);
+        }
+
+        // Merge all ranges, prioritize emotes > links > mentions > text
+        let allRanges: Array<{
+            type: "emote" | "link" | "mention";
+            start: number;
+            end: number;
+            value: string;
+            data?: any;
+        }> = [];
+        for (const [start, end, emote] of emoteRanges) {
+            allRanges.push({
+                type: "emote",
+                start,
+                end,
+                value: messageText.substring(start, end + 1),
+                data: emote,
+            });
+        }
+        for (const [start, end, url] of linkRanges) {
+            // Only add if not overlapping with emote
+            if (
+                !emoteRanges.some(
+                    ([eStart, eEnd]) => start <= eEnd && end >= eStart,
+                )
+            )
+                allRanges.push({ type: "link", start, end, value: url });
+        }
+        for (const [start, end, username] of mentionRanges) {
+            // Only add if not overlapping with emote or link
+            if (
+                !emoteRanges.some(
+                    ([eStart, eEnd]) => start <= eEnd && end >= eStart,
+                ) &&
+                !linkRanges.some(
+                    ([lStart, lEnd]) => start <= lEnd && end >= lStart,
+                )
+            )
+                allRanges.push({
+                    type: "mention",
+                    start,
+                    end,
+                    value: username,
+                });
+        }
+        allRanges.sort((a, b) => a.start - b.start);
+
+        // Build output
+        let result = "";
+        let idx = 0;
+        for (const token of allRanges) {
+            if (token.start > idx) {
+                // Add plain text between tokens
+                result += messageText.slice(idx, token.start);
+            }
+            if (token.type === "emote") {
+                const emote = token.data;
+                result += `<img src="${emote.url}" alt="${emote.name}" title="${emote.name}" class="emote" />`;
+            } else if (token.type === "link") {
+                result += `<a href="${token.value}" target="_blank" rel="noopener noreferrer" class="chat-link">${token.value}</a>`;
+            } else if (token.type === "mention") {
+                let mentionColor = generateUserColor(token.value.toLowerCase());
                 if (
-                    username.toLowerCase() === message.username.toLowerCase() &&
+                    token.value.toLowerCase() ===
+                        message.username.toLowerCase() &&
                     message.userColor
                 ) {
                     mentionColor = message.userColor;
                 }
-
-                return `<span class="mention" style="color: ${mentionColor}; font-weight: 600;">@${username}</span>`;
-            },
-        );
-
-        return parsedMessage;
+                result += `<span class="mention" style="color: ${mentionColor}; font-weight: 600;">@${token.value}</span>`;
+            }
+            idx = token.end + 1;
+        }
+        if (idx < messageText.length) {
+            result += messageText.slice(idx);
+        }
+        return result;
     }
 </script>
 
 <div
-    class="message"
+    class="message {message.isFirstTime ? 'ftc' : ''}"
     style="border-left-color: {getPlatformColor(message.platform)}"
 >
     <div class="message-header">
+        {#if message.badges && message.badges.length > 0}
+            {#each message.badges as badge}
+                <img
+                    src={badge.url}
+                    alt={badge.setID}
+                    title={`${badge.description ? badge.description + " " : ""}[${badge.setID}]`}
+                    class="twitch-badge"
+                />
+            {/each}
+        {/if}
+        {#if message.eventType === "raid"}
+            <span class="event-indicator raid">RAID</span>
+        {:else if message.eventType === "sub"}
+            <span class="event-indicator sub">SUB</span>
+        {:else if message.eventType === "submysterygift"}
+            <span class="event-indicator sub">SUB GIFT</span>
+        {/if}
+        {#if message.isFirstTime}
+            <span class="event-indicator first">FIRST</span>
+        {/if}
         <span
             class="username"
             style="color: {message.userColor ||
@@ -116,16 +201,11 @@
         >
             {message.username}
         </span>
-        <span
-            class="platform-badge"
-            style="background-color: {getPlatformColor(message.platform)}"
-        >
-            {message.platform.toUpperCase()}
-        </span>
         <span class="timestamp">{formatTime(message.timestamp)}</span>
     </div>
+
     <div class="message-content">
-        {@html parseMessageWithMentions(message.message, message.emotes, message.platform)}
+        {@html parseMessageWithMentions(message.message, message.emotes)}
     </div>
 </div>
 
@@ -138,6 +218,10 @@
         background: rgba(0, 0, 0, 0.5);
         border-radius: 0 4px 4px 0;
         animation: slideIn 0.3s ease-out;
+    }
+    .message.ftc {
+        background: linear-gradient(90deg, #e0c3fc 0%, #8ec5fc 100%);
+        color: #2d1457;
     }
 
     @keyframes slideIn {
@@ -160,15 +244,30 @@
     }
 
     .username {
-        font-weight: 600;
+        font-weight: 700;
     }
 
-    .platform-badge {
+    .event-indicator {
         font-size: 0.7em;
+        font-weight: 700;
         padding: 2px 6px;
-        border-radius: 10px;
-        color: white;
-        font-weight: 500;
+        border-radius: 8px;
+        margin-right: 4px;
+        color: #fff;
+        letter-spacing: 1px;
+        text-shadow: 0 1px 2px #000a;
+        vertical-align: middle;
+        display: inline-block;
+    }
+    .event-indicator.raid {
+        background: linear-gradient(90deg, #ff5e62, #ff9966);
+    }
+    .event-indicator.sub {
+        background: linear-gradient(90deg, #9146ff, #53fc18);
+    }
+    .event-indicator.first {
+        background: #f9eaf9;
+        color: #222;
     }
 
     .timestamp {
@@ -184,7 +283,7 @@
 
     /* Emote styling */
     .message-content :global(.emote) {
-        height: 1.5em; /* Adjust as needed */
+        height: calc(1.5em + 2px);
         width: auto;
         vertical-align: middle;
         margin: 0 2px;
@@ -205,5 +304,40 @@
     /* YouTube emoji styling - make them slightly larger */
     .message-content {
         font-size: 1.1em;
+    }
+
+    .twitch-badge {
+        height: 1.2em;
+        width: auto;
+        margin-right: 2px;
+        vertical-align: middle;
+        border-radius: 2px;
+        background: #222;
+        box-shadow: 0 0 2px #000a;
+    }
+    .twitch-badge {
+        height: 1.2em;
+        width: auto;
+        margin-right: 2px;
+        vertical-align: middle;
+        border-radius: 2px;
+        background: #222;
+        box-shadow: 0 0 2px #000a;
+    }
+
+    /* Link styling */
+    .message-content :global(.chat-link) {
+        color: #1e90ff;
+        text-decoration: none;
+        font-weight: 500;
+        border-bottom: 1px dotted #1e90ff;
+        transition:
+            color 0.2s ease,
+            border-color 0.2s ease;
+    }
+
+    .message-content :global(.chat-link:hover) {
+        color: #0c7cd5;
+        border-color: #0c7cd5;
     }
 </style>

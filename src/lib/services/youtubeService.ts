@@ -1,6 +1,7 @@
 
 import type { ChatMessage, EmoteData } from '../types';
-import { addMessage, addMessages, updateConnectionStatus, messages } from '../stores/chatStore';
+import { addMessage, addMessages, updateConnectionStatus } from '../stores/chatStore';
+
 // Helper: fetch with timeout (for local API only)
 async function fetchWithTimeout(resource: string, options: any = {}, timeout = 10000) {
     const controller = new AbortController();
@@ -22,9 +23,6 @@ export class YouTubeService {
     private isActive: boolean = true;
     private apiCallCount: number = 0;
     private lastError: string = '';
-    private clientVersion: string = '';
-    private clientName: string = '';
-    private apiKey: string = '';
 
     constructor(channelName: string) {
         this.channelName = channelName;
@@ -68,17 +66,11 @@ export class YouTubeService {
         }
     }
 
-
-
-    // No longer needed: getLiveVideoIdFromChannelName, getInitialContinuation
-
-
     private startAdaptivePolling(): void {
         this.pollingIntervalMs = 1000;
         this.pollMessages();
         this.scheduleNextPoll();
     }
-
 
     private scheduleNextPoll(): void {
         if (this.pollInterval) {
@@ -89,7 +81,6 @@ export class YouTubeService {
         }, this.pollingIntervalMs);
     }
 
-
     private adjustPollingInterval(newInterval: number): void {
         this.pollingIntervalMs = newInterval;
         if (this.pollInterval) {
@@ -97,7 +88,6 @@ export class YouTubeService {
             this.scheduleNextPoll();
         }
     }
-
 
     private async pollMessages(): Promise<void> {
         if (!this.continuation || !this.videoId) {

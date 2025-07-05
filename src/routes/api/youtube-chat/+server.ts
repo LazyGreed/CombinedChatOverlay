@@ -148,7 +148,7 @@ export const POST: RequestHandler = async ({ request }) => {
             if (initialDataMatch && initialDataMatch[1]) {
                 try {
                     initialData = JSON.parse(initialDataMatch[1]);
-                } catch (e) {}
+                } catch (e) { }
             }
             if (!initialData) {
                 // Try alternate pattern (sometimes in window["ytInitialData"])
@@ -156,7 +156,7 @@ export const POST: RequestHandler = async ({ request }) => {
                 if (altMatch && altMatch[1]) {
                     try {
                         initialData = JSON.parse(altMatch[1]);
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             }
             if (!initialData) {
@@ -177,7 +177,7 @@ export const POST: RequestHandler = async ({ request }) => {
                         continuation = reload.continuation;
                     }
                 }
-            } catch (e) {}
+            } catch (e) { }
             // Recursive search for any 'continuation' key in the object
             function findContinuation(obj: any): string | null {
                 if (!obj || typeof obj !== 'object') return null;
@@ -241,9 +241,9 @@ export const POST: RequestHandler = async ({ request }) => {
                                 }
                             }
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
         // Step 3: If continuation and videoId are present, poll chat endpoint
         if (cont && vid) {
