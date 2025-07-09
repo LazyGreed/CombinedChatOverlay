@@ -74,7 +74,7 @@
           placeholder="Channel name (e.g., @channelname or channelname)"
           bind:value={config.youtube!.channelName}
         />
-        <span style="color: grey;">Might not work on server.</span>
+        <span style="color: grey;">Include @ too, e.g., @channelname</span>
       </div>
 
       <div class="config-actions">

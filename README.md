@@ -23,5 +23,6 @@
     
 ## TODO:
 
+- fix emote on youtube
 - add badges support for kick
-- fix youtubeService not working when hosted on server
+- add badges support for youtube
