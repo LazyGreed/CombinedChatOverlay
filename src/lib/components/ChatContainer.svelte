@@ -9,92 +9,14 @@
     import { createEventDispatcher } from "svelte";
     let chatContainer: HTMLElement;
     const dispatch = createEventDispatcher();
-    $: hasMessages = (isPaused ? allMessages : $recentMessages).length > 0;
+    $: hasMessages = $recentMessages.length > 0;
     $: dispatch("hasMessages", { hasMessages });
     let services: (TwitchService | KickService | YouTubeService)[] = [];
-
-    // Pause on scroll functionality
-    let isPaused = false;
-    let scrollTimeout: number | null = null;
-    let unreadCount = 0;
-
-    // let pauseResumeButton: HTMLElement;
-    let lastScrollTop = 0;
     let isNearBottom = true;
     let ignoreNextScroll = false;
     let lastProgrammaticScroll = 0;
 
-    // Store messages that arrive while paused
-    let allMessages: typeof $recentMessages = [];
-
-    // Track the last message count when paused
-    let lastPausedMessageCount = 0;
-
-    function handleScroll() {
-        if (!chatContainer) return;
-
-        // Ignore scrolls within 400ms of a programmatic scroll
-        if (Date.now() - lastProgrammaticScroll < 800) {
-            lastScrollTop = chatContainer.scrollTop;
-            return;
-        }
-
-        if (ignoreNextScroll) {
-            ignoreNextScroll = false;
-            lastScrollTop = chatContainer.scrollTop;
-            return;
-        }
-
-        const { scrollTop, scrollHeight, clientHeight } = chatContainer;
-        const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-
-        isNearBottom = distanceFromBottom <= 100;
-
-        if (lastScrollTop - scrollTop > 20 && !isNearBottom && !isPaused) {
-            pauseChat();
-        }
-
-        if (isNearBottom && isPaused) {
-            resumeChat();
-        }
-
-        lastScrollTop = scrollTop;
-
-        if (scrollTimeout) {
-            clearTimeout(scrollTimeout);
-        }
-    }
-
-    function pauseChat() {
-        isPaused = true;
-        console.log("Chat paused - scroll detected");
-
-        // Store current state
-        allMessages = [...$recentMessages];
-        lastPausedMessageCount = $recentMessages.length;
-        unreadCount = 0;
-    }
-
-    function resumeChat() {
-        isPaused = false;
-        console.log("Chat resumed");
-
-        // Clear timeout
-        if (scrollTimeout) {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = null;
-        }
-
-        // Reset counters
-        unreadCount = 0;
-        lastPausedMessageCount = 0;
-
-        // Show all messages and scroll to bottom
-        setTimeout(() => {
-            scrollToBottom();
-        }, 100);
-    }
-
+    // pauseChat and resumeChat removed
     function scrollToBottom() {
         if (chatContainer) {
             ignoreNextScroll = true;
@@ -103,31 +25,16 @@
         }
     }
 
-    // Auto-scroll only when not paused and new messages arrive
-    $: if (!isPaused && $recentMessages.length > 0) {
+    // Always autoscroll to bottom when new messages arrive and user is near bottom
+    $: if ($recentMessages.length > 0) {
         setTimeout(() => {
-            if (!isPaused && isNearBottom) {
+            if (isNearBottom) {
                 scrollToBottom();
             }
         }, 50);
     }
 
-    // When paused, update unreadCount and allMessages if new messages arrive
-    $: if (isPaused) {
-        if ($recentMessages.length > lastPausedMessageCount) {
-            unreadCount = $recentMessages.length - lastPausedMessageCount;
-            allMessages = [...$recentMessages];
-        }
-    }
-
     onMount(() => {
-        // Add scroll listener
-        if (chatContainer) {
-            chatContainer.addEventListener("scroll", handleScroll, {
-                passive: true,
-            });
-        }
-
         // Connect to services based on config
         const unsubscribe = channelConfig.subscribe(async (config) => {
             // Disconnect existing services
@@ -181,40 +88,21 @@
 
         return () => {
             unsubscribe();
-            if (chatContainer) {
-                chatContainer.removeEventListener("scroll", handleScroll);
-            }
         };
     });
 
     onDestroy(() => {
         services.forEach((service) => service.disconnect());
-        if (scrollTimeout) {
-            clearTimeout(scrollTimeout);
-        }
     });
 </script>
 
 <div class="chat-wrapper">
-    <!-- Pause/Resume Controls -->
-    {#if isPaused}
-        <div class="chat-controls">
-            <button class="unread-indicator" type="button" on:click={resumeChat} aria-label="Resume chat" style="pointer-events:auto;">
-                {#if unreadCount > 0}
-                    {unreadCount} new message{unreadCount === 1 ? "" : "s"} – Click to resume
-                {:else}
-                    Chat paused – Click to resume
-                {/if}
-            </button>
-        </div>
-    {/if}
-
     <div class="chat-container" bind:this={chatContainer}>
-        {#each isPaused ? allMessages : $recentMessages as item (item.id)}
+        {#each $recentMessages as item (item.id)}
             <ChatMessage message={item} />
         {/each}
 
-        {#if (isPaused ? allMessages : $recentMessages).length === 0}
+        {#if $recentMessages.length === 0}
             <div class="no-messages">
                 <p>
                     No messages yet. Configure your channels to start receiving
@@ -235,19 +123,6 @@
         flex-direction: column;
     }
 
-    .chat-controls {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 2000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        pointer-events: none;
-    }
-
     @keyframes pulse {
         0%,
         100% {
@@ -256,28 +131,6 @@
         50% {
             box-shadow: 0 4px 25px rgba(255, 107, 107, 0.6);
         }
-    }
-
-    .unread-indicator {
-        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-        color: white;
-        padding: 6px 12px;
-        border-radius: 15px;
-        font-size: 12px;
-        font-weight: 600;
-        text-align: center;
-        pointer-events: auto;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        animation: bounce 1s ease-in-out infinite alternate;
-        border: none;
-        outline: none;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .unread-indicator:focus {
-        outline: 2px solid #fff;
-        outline-offset: 2px;
     }
 
     @keyframes bounce {
@@ -341,14 +194,6 @@
 
     /* Mobile optimizations */
     @media (max-width: 768px) {
-        .chat-controls {
-            top: auto;
-            bottom: 80px;
-            left: 10px;
-            right: 10px;
-            transform: none;
-        }
-
         .chat-container {
             padding: 10px;
         }
