@@ -1,7 +1,7 @@
 {
 	"name": "combined-chat-overlay",
 	"private": true,
-	"version": "0.5.6",
+	"version": "0.5.9",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
@@ -29,6 +29,6 @@
 	"dependencies": {
 		"puppeteer": "^24.11.2",
 		"reconnecting-websocket": "^4.4.0",
-		"youtubei.js": "^14.0.0"
+		"youtubei.js": "github:LuanRT/YouTube.js"
 	}
 }

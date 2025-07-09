@@ -6,7 +6,11 @@
     import { YouTubeService } from "../services/youtubeService";
     import ChatMessage from "./ChatMessage.svelte";
 
+    import { createEventDispatcher } from "svelte";
     let chatContainer: HTMLElement;
+    const dispatch = createEventDispatcher();
+    $: hasMessages = (isPaused ? allMessages : $recentMessages).length > 0;
+    $: dispatch("hasMessages", { hasMessages });
     let services: (TwitchService | KickService | YouTubeService)[] = [];
 
     // Pause on scroll functionality
@@ -22,6 +26,9 @@
 
     // Store messages that arrive while paused
     let allMessages: typeof $recentMessages = [];
+
+    // Track the last message count when paused
+    let lastPausedMessageCount = 0;
 
     function handleScroll() {
         if (!chatContainer) return;
@@ -41,33 +48,20 @@
         const { scrollTop, scrollHeight, clientHeight } = chatContainer;
         const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
 
-        // Consider "near bottom" if within 100px of the bottom
         isNearBottom = distanceFromBottom <= 100;
 
-        // Only pause if user scrolls up by more than 20px and not near bottom
         if (lastScrollTop - scrollTop > 20 && !isNearBottom && !isPaused) {
             pauseChat();
         }
 
-        // If user scrolls to bottom while paused, resume
         if (isNearBottom && isPaused) {
             resumeChat();
         }
 
         lastScrollTop = scrollTop;
 
-        // Clear existing timeout
         if (scrollTimeout) {
             clearTimeout(scrollTimeout);
-        }
-
-        // Set new timeout to auto-resume after 5 seconds of no scrolling
-        if (isPaused) {
-            scrollTimeout = window.setTimeout(() => {
-                if (isPaused) {
-                    resumeChat();
-                }
-            }, 5000); // Auto-resume after 5 seconds of inactivity
         }
     }
 
@@ -77,6 +71,7 @@
 
         // Store current state
         allMessages = [...$recentMessages];
+        lastPausedMessageCount = $recentMessages.length;
         unreadCount = 0;
     }
 
@@ -92,8 +87,9 @@
 
         // Reset counters
         unreadCount = 0;
+        lastPausedMessageCount = 0;
 
-        // Scroll to bottom after a brief delay
+        // Show all messages and scroll to bottom
         setTimeout(() => {
             scrollToBottom();
         }, 100);
@@ -114,6 +110,14 @@
                 scrollToBottom();
             }
         }, 50);
+    }
+
+    // When paused, update unreadCount and allMessages if new messages arrive
+    $: if (isPaused) {
+        if ($recentMessages.length > lastPausedMessageCount) {
+            unreadCount = $recentMessages.length - lastPausedMessageCount;
+            allMessages = [...$recentMessages];
+        }
     }
 
     onMount(() => {
@@ -193,16 +197,19 @@
 
 <div class="chat-wrapper">
     <!-- Pause/Resume Controls -->
-    {#if isPaused && unreadCount > 0}
+    {#if isPaused}
         <div class="chat-controls">
-            <div class="unread-indicator">
-                {unreadCount} new message{unreadCount === 1 ? "" : "s"}
-            </div>
+            <button class="unread-indicator" type="button" on:click={resumeChat} aria-label="Resume chat" style="pointer-events:auto;">
+                {#if unreadCount > 0}
+                    {unreadCount} new message{unreadCount === 1 ? "" : "s"} – Click to resume
+                {:else}
+                    Chat paused – Click to resume
+                {/if}
+            </button>
         </div>
     {/if}
 
     <div class="chat-container" bind:this={chatContainer}>
-        <!-- TEMP: Fallback rendering for debugging -->
         {#each isPaused ? allMessages : $recentMessages as item (item.id)}
             <ChatMessage message={item} />
         {/each}
@@ -215,11 +222,12 @@
                 </p>
             </div>
         {/if}
-        <!-- TEMP DEBUG REMOVED -->
     </div>
 </div>
 
 <style>
+    /* removed .top-bar-hover-area styles */
+
     .chat-wrapper {
         height: 100vh;
         position: relative;
@@ -261,6 +269,15 @@
         pointer-events: auto;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         animation: bounce 1s ease-in-out infinite alternate;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .unread-indicator:focus {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
     }
 
     @keyframes bounce {
@@ -275,7 +292,7 @@
     .chat-container {
         flex: 1;
         overflow-y: auto;
-        padding: 60px 10px 10px 10px;
+        padding: 50px 10px 10px 10px;
         box-sizing: border-box;
         scroll-behavior: smooth;
     }
