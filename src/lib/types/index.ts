@@ -103,3 +103,10 @@ export interface KickEmoteData {
     name: string;
     src: string;
 }
+
+// YouTube-specific badge data
+export interface YouTubeBadgeData {
+    name: string;
+    url: string;
+    description?: string;
+}
